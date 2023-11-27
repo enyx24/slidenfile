@@ -221,8 +221,8 @@ select * into KHACHHANG1 from KHACHHANG
 
 --3
 update SANPHAM1
-set Gia = 1.05 * Gia
-where NuocSX = 'Thai Lan'
+set GIA = 1.05 * GIA
+where NUOCSX = 'Thai Lan'
 
 --4
 update SANPHAM1
@@ -238,22 +238,149 @@ or (NGDK >= '1/1/2007' and DOANHSO >= 2000000)
 
 --III
 --1
-select MaSP, TenSP
-from SanPham
-where NuocSX = 'Trung Quoc'
+select MASP, TENSP
+from SANPHAM
+where NUOCSX = 'Trung Quoc'
 
 --2
-select MaSP, TenSP
-from SanPham
-where DVT IN ('cay', 'quyen')
+select MASP, TENSP
+from SANPHAM
+where DVT in ('cay', 'quyen')
 
 --3
-select MaSP, TenSP
-from SanPham
-where MaSP LIKE 'B%01'
+select MASP, TENSP
+from SANPHAM
+where MASP LIKE 'B%01'
 
---31
-SELECT top 3  MAKH, RANK() OVER(ORDER BY DOANHSO DESC) AS XH
-FROM KHACHHANG 
 
---42 k dung top1
+--4
+select MASP, TENSP
+from SANPHAM
+where 
+	NUOCSX = 'Trung Quoc'
+	and GIA between 30000 and 40000
+
+--5
+select MASP, TENSP
+from SANPHAM
+where 
+	NUOCSX in ('Trung Quoc', 'Thai Lan')
+	and GIA between 30000 and 40000
+
+--6
+select SOHD, TRIGIA
+from HOADON
+where NGHD in ('1/1/2007', '2/1/2007')
+
+--7
+select SOHD, TRIGIA
+from HOADON
+where month(NGHD) = 1 and year(NGHD) = 2007
+order by NGHD asc, TRIGIA desc
+
+--8
+select distinct KHACHHANG.MAKH, HOTEN
+from KHACHHANG, HOADON
+where 
+	KHACHHANG.MAKH = HOADON.MAKH 
+	and NGHD = '1/1/2007'
+
+--9
+select SOHD, TRIGIA
+from HOADON, NHANVIEN
+where
+	HOADON.MANV = NHANVIEN.MANV
+	and HOTEN = 'Nguyen Van B'
+	and NGHD = '28/10/2006'
+
+--10
+select distinct SANPHAM.MASP, TENSP
+from SANPHAM, CTHD, KHACHHANG, HOADON
+where
+	CTHD.MASP = SANPHAM.MASP
+	and CTHD.SOHD = HOADON.SOHD
+	and HOADON.MAKH = KHACHHANG.MAKH
+	and HOTEN = 'Nguyen Van A'
+	and month(NGHD) = 10 and year(NGHD) = 2006
+
+--11
+select distinct SOHD
+from CTHD
+where MASP in ('BB01', 'BB02')
+
+--12
+select distinct SOHD
+from CTHD
+where 
+	MASP in ('BB01', 'BB02') 
+	and SL between 10 and 20
+
+--13
+select distinct SOHD
+from CTHD
+where MASP = 'BB01' and SL between 10 and 20
+intersect
+(
+	select distinct SOHD
+	from CTHD
+	where MASP = 'BB02' and SL between 10 and 20
+)
+
+--14
+select distinct SANPHAM.MASP, TENSP
+from HOADON, SANPHAM, CTHD
+where
+	HOADON.SOHD = CTHD.SOHD
+	and CTHD.MASP = SANPHAM.MASP
+	and (NUOCSX = 'Trung Quoc'
+	or NGHD = '1/1/2007')
+
+
+--15
+select MASP, TENSP
+from SANPHAM
+where MASP not in (select MASP from CTHD)
+
+--16
+select MASP, TENSP
+from SANPHAM
+where MASP not in
+(
+	select MASP 
+	from CTHD, HOADON
+	where 
+		CTHD.SOHD = HOADON.SOHD
+		and year(NGHD) = 2006
+)
+
+
+--17
+select MASP, TENSP
+from SANPHAM
+where
+	NUOCSX = 'Trung Quoc'
+	and MASP not in
+	(
+		select MASP 
+		from CTHD, HOADON
+		where 
+			CTHD.SOHD = HOADON.SOHD
+			and year(NGHD) = 2006
+	)
+
+--18
+select SOHD
+from HOADON
+where not exists
+(
+	select *
+	from SANPHAM
+	where NUOCSX = 'Singapore'
+	and not exists
+	(
+		select *
+		from CTHD
+		where CTHD.SOHD = HOADON.SOHD
+		and CTHD.MASP = SANPHAM.MASP
+	)
+)
