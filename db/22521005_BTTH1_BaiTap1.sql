@@ -210,7 +210,97 @@ alter table HOADON
 add constraint ck_trigia check(TRIGIA > 0);
 --10
 alter table KHACHHANG
-add constraint ck_ngsinh_ngdk check(NGDK > NGSINH);
+add constraint ck_ngsinh_ngdk check(NGDK > NGSINH)
+
+--11
+create trigger trg_ins_udt_nghd on hoadon
+for insert, update
+as
+begin
+	if (exists (select * from khachhang, inserted 
+				where khachhang.makh = inserted.makh 
+				and khachhang.ngdk > inserted.nghd))
+	begin
+		print 'error: nghd phai >= ngdk'
+		rollback transaction
+	end
+end
+
+create trigger trg_upd_ngdk on khachhang
+for update
+as
+begin
+	if (exists (select * from hoadon, inserted
+				where hoadon.makh = inserted.makh
+				and hoadon.nghd < inserted.ngdk))
+	begin
+		print 'error: nghd phai >= ngdk'
+		rollback transaction
+	end
+end
+
+--12
+create trigger trg_ins_udt_ngbh on hoadon
+for insert, update
+as
+begin
+	if (exists (select * from nhanvien, inserted 
+				where nhanvien.manv = inserted.makh 
+				and nhanvien.ngvl > inserted.nghd))
+	begin
+		print 'error: nghd phai >= ngvl'
+		rollback transaction
+	end
+end
+
+create trigger trg_upd_ngvl on nhanvien
+for update
+as
+begin
+	if (exists (select * from hoadon, inserted
+				where hoadon.manv = inserted.manv
+				and hoadon.nghd < inserted.ngvl))
+	begin
+		print 'error: nghd phai >= ngdk'
+		rollback transaction
+	end
+end
+
+--13
+create trigger trg_del_cthd on cthd
+for delete
+as
+begin
+	if ((select count(*) from deleted where sohd = deleted.sohd)
+		= (select count(*) from hoadon, deleted where deleted.sohd = hoadon.sohd))
+	begin
+		print 'error: moi hoa don phai co it nhat 1 cthd'
+		rollback transaction
+	end
+end
+
+--15
+create trigger trg_upd_doanhso on khachhang
+for update
+as
+begin
+	declare @tongtrigia money, @doanhso money
+
+	select @tongtrigia = sum(trigia)
+	from hoadon, inserted
+	where hoadon.makh = inserted.makh
+
+	select @doanhso = doanhso from inserted
+
+	if (@doanhso <> @tongtrigia)
+	begin
+		print('doanh so cua mot khach hang la tong tri gia cac hoa don khach hang thanh vien do da mua')
+		rollback transaction
+	end
+end
+
+
+
 
 --II
 --1 - I1
@@ -384,3 +474,205 @@ where not exists
 		and CTHD.MASP = SANPHAM.MASP
 	)
 )
+
+--19
+select SoHD
+from HoaDon
+where year(NgHD) = 2006 
+and not exists
+(
+	select *
+	from SanPham
+	where NuocSX = 'Singapore'
+	and not exists
+	(
+		select *
+		from CTHD
+		where CTHD.SoHD = HoaDon.SoHD
+		and CTHD.MaSP = SanPham.MaSP
+	)
+)
+
+--20
+select count(*)
+from HoaDon
+where MaKH IS NULL
+
+--21
+select count(distinct MaSP)
+from HoaDon, CTHD
+where
+	HoaDon.SoHD = CTHD.SoHD
+	and year(NgHD) = 2006
+
+--22
+select min(TriGia) Min_TriGia, max(TriGia) Max_TriGia
+from HoaDon
+
+--23
+select avg(TriGia)
+from HoaDon
+where year(NgHD) = 2006
+
+--24
+select sum(TriGia)
+from HoaDon
+where year(NgHD) = 2006
+
+--25
+select max(TriGia)
+from HoaDon
+where year(NgHD) = 2006
+
+--26
+select distinct HoTen
+from KhachHang, HoaDon
+where 
+	HoaDon.MaKH = KhachHang.MaKH
+	and year(NgHD) = 2006
+	and TriGia = (select max(TriGia) from HoaDon where year(NgHD) = 2006)
+
+--27
+select top 3 MaKH, HoTen
+from KhachHang
+order by DoanhSo desc
+
+--28
+select MaSP, TenSP
+from SanPham
+where Gia in (
+	select distinct top 3 Gia
+	from SanPham
+	order by Gia desc
+)
+
+--29
+select MaSP, TenSP
+from SanPham
+where NuocSX = 'Thai Lan'
+and Gia in (
+	select distinct top 3 Gia
+	from SanPham
+	order by Gia desc
+)
+
+--30
+select MaSP, TenSP
+from SanPham
+where NuocSX = 'Trung Quoc'
+and Gia in (
+	select distinct top 3 Gia
+	from SanPham
+	where NuocSX = 'Trung Quoc'
+	order by Gia desc
+)
+
+--31
+select top 3 *
+from KhachHang
+order by DoanhSo desc
+
+--32
+select count(*)
+from SanPham
+where NuocSX = 'Trung Quoc'
+
+--33
+select NuocSX, count(*) SoSP
+from SanPham
+group by NuocSX
+
+--34
+select NuocSX, max(Gia) Max_Gia, min(Gia) Min_Gia, avg(Gia) TB_Gia
+from SanPham
+group by NuocSX
+
+--35
+select NgHD, sum(TriGia) DoanhThu
+from HoaDon
+group by NgHD
+
+--36
+select SanPham.MaSP, sum(SL) SoLuongBan
+from SanPham, HoaDon, CTHD
+where
+	CTHD.MaSP = SanPham.MaSP
+	and CTHD.SoHD = HoaDon.SoHD
+	and MONTH(NgHD) = 10 and year(NgHD) = 2006
+group by SanPham.MaSP
+
+--37
+select MONTH(NgHD) Thang, sum(TriGia) DoanhThu
+from HoaDon
+where year(NgHD) = 2006
+group by MONTH(NgHD)
+
+--38
+select SoHD
+from CTHD
+group by SoHD
+having count(distinct MaSP) >= 4
+
+--39 
+select SoHD
+from CTHD, SanPham
+where
+	CTHD.MaSP = SanPham.MaSP
+	and NuocSX = 'Viet Nam'
+group by SoHD
+having count(distinct CTHD.MaSP) >= 3
+
+--40
+select KhachHang.MaKH, HoTen
+from KhachHang, HoaDon
+where KhachHang.MaKH = HoaDon.MaKH
+group by KhachHang.MaKH, HoTen
+having count(*) >= ALL(select count(*) from HoaDon group by MaKH)
+
+--41
+select MONTH(NgHD)
+from HoaDon
+where year(NgHD) = 2006
+group by MONTH(NgHD)
+having sum(TriGia) >= ALL(select sum(TriGia) from HoaDON where year(NgHD) = 2006 group by MONTH(NgHD))
+
+--42
+select top 1 with TIES SanPham.MaSP, TenSP
+from SanPham, CTHD, HoaDon
+where 
+	SanPham.MaSP = CTHD.MaSP
+	and HoaDon.SoHD = CTHD.SoHD
+	and year(NgHD) = 2006
+group by SanPham.MaSP, TenSP
+order by sum(SL)
+
+--43
+select NuocSX, MaSP, TenSP
+from SanPham SP1
+where exists
+(
+	select NuocSX
+	from SanPham SP2
+	group by NuocSX
+	having SP1.NuocSX = SP2.NuocSX
+	and SP1.Gia = max(Gia)
+)
+
+--44
+select NuocSX
+from SanPham
+group by NUOCSX
+having count(distinct GIA) >= 3
+
+--45
+select *
+from KhachHang
+where MaKH in
+(
+	select top 1 with TIES HoaDon.MaKH
+	from (select top 10 MaKH from KhachHang order by DoanhSo desc) as A
+	JOIN HoaDon ON A.MaKH = HoaDon.MaKH
+	group by HoaDon.MaKH
+	order by count(*) desc
+)
+

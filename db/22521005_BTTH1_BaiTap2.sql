@@ -361,6 +361,45 @@ alter table GIAOVIEN
 add constraint ck_hocvi 
 check (HOCVI in ('CN', 'KS', 'Ths', 'TS', 'PTS'))
 
+
+--9
+create trigger trg_ins_udt_loptruong on lop
+for insert, update
+as
+begin
+	if not exists (select * from inserted i, hocvien hv
+	where i.trglop = hv.mahv and i.malop = hv.malop)
+	begin
+		print 'error: lop truong cua mot lop phai la hoc vien cua lop do'
+		rollback transaction
+	end
+end
+
+create trigger trg_del_hocvien on hocvien
+for delete
+as
+begin
+	if exists (select * from deleted d, inserted i, lop l 
+	where d.mahv = l.trglop and d.malop = l.malop)
+	begin
+		print 'error: hoc vien hien tai dang la truong lop'
+		rollback transaction
+	end
+end
+
+--11
+alter table hocvien add constraint check_tuoi check (year(getdate()) - year(ngsinh) >= 18)
+
+--12
+alter table giangday add constraint check_giangday check (tungay < denngay)
+
+--13
+alter table giaovien add constraint check_tuoilam check (year(ngvl) - year(ngsinh) >= 22)
+
+--14
+alter table monhoc add constraint check_tinchi check (abs(tclt - tcth) <= 3)
+
+
 --II
 --1
 update GIAOVIEN
@@ -614,3 +653,190 @@ where
 			and TENMH = 'Co So Du Lieu'
 		group by MAHV
 	)
+
+--19
+select MaKhoa, TenKhoa
+from Khoa
+where NgTLap = (select min(NgTLap) from Khoa)
+
+--20
+select count(*) 'So giao vien co hoc ham GS hoac PGS'
+from GiaoVien
+where HocHam in ('GS', 'PGS')
+
+--21 
+select MaKhoa, HocVi, count(*) 'So giao vien'
+from GiaoVien
+group by MaKhoa, HocVi
+order by MaKhoa
+
+--22
+select MaMH, KQua, count(*) 'So hoc vien'
+from KetQuaThi
+group by MaMH, KQua
+order by MAMH
+
+--23
+select distinct
+	GiaoVien.MaGV, HoTen
+from
+	GiaoVien, Lop, GiangDay
+where
+	GiangDay.MaLop = Lop.MaLop
+	and GiangDay.MaGV = GiaoVien.MaGV
+	and GiaoVien.MaGV = Lop.MaGVCN
+
+--24
+select 
+	Ho+' '+Ten as 'Ho ten truong lop cua lop co si so cao nhat'
+from
+	HocVien, Lop
+where
+	HocVien.MaHV = Lop.TrgLop
+	and Lop.SiSo = (select max(SiSo) from Lop)
+
+--25
+select Ho + ' ' + Ten 'Ho ten truong lop thi khong dat qua 3 mon'
+from
+	HocVien, Lop, KetQuaThi
+where
+	HocVien.MAHV = Lop.TrgLop
+	and HocVien.MaHV = KetQuaThi.MaHV
+	and KQua = 'Khong Dat'
+group by 
+	TrgLop, Ho, Ten
+having 
+	count(*) > 3
+
+--26
+select top 1 with TIES 
+	HocVien.MaHV, (Ho+' '+Ten) as HoTen
+from 
+	HocVien, KetQuaThi
+where
+	HocVien.MaHV = KetQuaThi.MaHV
+	and Diem >= 9
+group by 
+	HocVien.MaHV, Ho, Ten
+order by 
+	count(*) desc
+
+--27
+select
+	MaLop, MaHV, HoTen
+from
+(
+	select
+		MaLop, HocVien.MaHV, (Ho+' '+Ten) HoTen, count(*) SoLuongDiem, RANK() OVER (PARTITION by MaLop order by count(*) desc) as XepHang
+	from
+		HocVien, KetQuaThi
+	where
+		HocVien.MaHV = KetQuaThi.MaHV
+		and Diem >= 9
+	group by
+		MaLop, HocVien.MaHV, Ho, Ten
+) as A
+where
+	A.XepHang = 1
+
+--28
+select MaGV, count(distinct MaMH) 'So mon hoc', count(distinct MALOP) 'So lop'
+from GiangDay
+group by MaGV
+
+--29 
+select HocKy, Nam, A.MaGV, HoTen
+from GiaoVien,
+(
+	select 
+		HocKy, Nam, MaGV, RANK() OVER (PARTITION by HocKy, Nam order by count(*) desc) as XepHang
+	from GiangDay
+	group by HocKy, Nam, MaGV
+) as A
+where
+	A.MAGV = GiaoVien.MAGV
+	and XepHang = 1
+order by
+	Nam, HocKy
+
+--30
+select top 1 with TIES
+	MonHoc.MaMH, TenMH
+from
+	MonHoc, KetQuaThi
+where
+	MonHoc.MaMH = KetQuaThi.MaMH
+	and LanThi = 1
+	and KQua = 'Khong Dat'
+group by
+	MonHoc.MaMH, TenMH
+order by
+	count(*) desc
+
+--31
+select distinct
+	HocVien.MaHV, (Ho+' '+Ten) HoTen
+from
+	HocVien, KetQuaThi
+where
+	HocVien.MaHV = KetQuaThi.MaHV
+	and not exists
+	(
+		select *
+		from KetQuaThi
+		where LanThi = 1
+		and KQua = 'Khong Dat'
+		and MaHV = HocVien.MaHV
+	)
+
+--32
+select distinct
+	HocVien.MaHV, (Ho+' '+Ten) HoTen
+from
+	HocVien, KetQuaThi
+where
+	HocVien.MaHV = KetQuaThi.MaHV
+	and not exists
+	(
+		select *
+		from KetQuaThi
+		where LanThi = (select max(LanThi) from KetQuaThi where MaHV = HocVien.MaHV group by MaHV)
+		and KQua = 'Khong Dat'
+		and MaHV = HocVien.MaHV
+	)
+
+--33
+select MaHV, (Ho+' '+Ten) HoTen
+from HocVien
+where not exists
+(
+	select *
+	from MonHoc
+	where not exists
+	(
+		select *
+		from KetQuaThi
+		where
+			KetQuaThi.MaMH = MonHoc.MaMH
+			and KetQuaThi.MaHV = HocVien.MaHV
+			and LanThi = 1 and KQua = 'Dat'
+	)
+)
+
+--35
+select MaMH, MaHV, HoTen
+from
+(
+	select
+		MaMH, HocVien.MaHV, (Ho+' '+Ten) HoTen, RANK() OVER (PARTITION by MaMH order by max(Diem) desc) as XepHang
+	from
+		HocVien, KetQuaThi
+	where
+		HocVien.MaHV = KetQuaThi.MaHV
+		and LanThi = (select max(LanThi) from KetQuaThi where MaHV = HocVien.MaHV group by MaHV)
+	group by
+		MaMH, HocVien.MaHV, Ho, Ten
+) as A
+where XepHang = 1
+
+
