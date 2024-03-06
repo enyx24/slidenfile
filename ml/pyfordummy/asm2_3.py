@@ -1,27 +1,35 @@
-import math
-r, c = [int(num) for num in input().split()]
+# from math import ceil, log10
+import io, os, sys
+input = io.BytesIO(os.read(0,os.fstat(0).st_size)).readline
+r, c = [int(num) for num in input().decode().split()]
 a = []
 for i in range(r):
-    a.append([])
-    a[i] = input().split()
+    #inp = input().decode().split()
+    #print(i.np)
+    a += [input().decode().split()]
+print(a)
 t = []
 
+t = [max((len(str(int(item)))) for item in column) for column in a]
+for i in range(1, len(t)):
+    t[i] += 1
+print(t)
 
+'''
 for j in range(c):
     m = 0
     for i in range(r):
         a[i][j] = int(a[i][j])
         cnt = 0
-        if a[i][j] != 0:
-            if a[i][j] < 0:
-                cnt = 1
-            cnt += math.ceil(math.log10(abs(a[i][j])))
-        else:
+        if (a[i][j]) == 0:
             cnt = 1
-        m = max(m, cnt)
-    t.append(m+ (1 if j > 0 else 0))
-
+        else:
+            cnt += len(str(a[i][j]))
+        m = m if m > cnt else cnt
+    t+= [(m+ (1 if j > 0 else 0))]
+'''
 for i in range(r):
+    s = ""
     for j in range(c):
-        print(('{:>'+str(t[j])+'s}').format(str(a[i][j])), end = '')
-    print()
+        s += (('%'+str(t[j])+'s') % ((a[i][j])))
+    sys.stdout.write(s+'\n')

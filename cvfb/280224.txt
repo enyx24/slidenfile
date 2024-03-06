@@ -1,0 +1,2 @@
+ảnh số: ảnh biểu diễn dưới dạng mảng số.
+
