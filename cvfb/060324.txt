@@ -1,0 +1,23 @@
+ảnh số != ma trận số
+vector
+point
+độ đo   -> khoảng cách (euclid, mahattan)
+	-> tương đồng (cosin)
+
+Xác định 2 hình khác hay giống nhau
+-> độ đo khoảng cách (giữa 2 matr)
+
+VD:
+[ 1 2 	    [ 2 1
+  3 4 ] và    4 3 ]     // flip
+
+3x4 và 9x12 		// scale
+
+-> Thống kê tần suất xuất hiện của giá trị v = 1->255
+X -> vector X [...] (255 phần tử)
+Y -> tương tự
+-> histogram?
+
+dist(X, Y) = ?
+
+

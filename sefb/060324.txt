@@ -2,3 +2,5 @@ git clone <link>
 tải repo
 git commit -m <cômment>
 commit thay đổi
+
+Về học github + làm bài dfd
