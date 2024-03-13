@@ -1,0 +1,16 @@
+T(n) = 3T(n/4)+n^2
+a = 3, b = 4, d = 2
+a < b^d -> O(n^c2)
+
+T(n) = T(2n/3)+1
+a = 1, b = 3/2, d = 0
+a = b^d -> log(n)
+
+T(n) = 7T(n/2)+n^2
+a = 7, b = 2, d = 2
+a < b^d -> O(n^log(7))
+
+3^f(n/2) + 2log(f(n/2)) - f(n/2) + 1
+T(n) = 3^T(n/2) + 2log(T(n/2)) - T(n/2) + 1
+T(n) = 3^T(n/2^k) + 2log(T(n/2^k)) - T(n/2^k) + k
+n/2^k = 1 -> k = log(n)
