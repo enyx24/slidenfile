@@ -1,0 +1,11 @@
+Test:
+- Test Script: script để test
+- Test Cases: mẫu input output
+
+Completed search:
+- Duyệt qua hết những gì có thể -> đưa ra test đúng
+	* Bruteforce
+	* Backtracking
+
+BTVN:
+Nộp bằng pdf, làm cá nhân, 

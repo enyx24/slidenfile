@@ -1,0 +1,4 @@
+backtracking là gì
+khác gì với bruteforce
+điểm quan trọng nhất của backtracking
+triển khai ntn
